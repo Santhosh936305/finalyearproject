@@ -1,4 +1,0 @@
-flask
-gunicorn
-google-genai
-python-dotenv
