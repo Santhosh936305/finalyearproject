@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat - Gemini AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --secondary: #a855f7;
+            --bg: #0f172a;
+            --glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+            --user-bubble: linear-gradient(135deg, #6366f1, #4f46e5);
+            --ai-bubble: rgba(255, 255, 255, 0.05);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background: #0f172a;
+            color: white;
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            width: 300px;
+            background: #020617;
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .sidebar h1 {
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+            background: linear-gradient(to right, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .user-info {
+            padding: 15px;
+            background: var(--glass);
+            border-radius: 12px;
+            margin-top: auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logout-btn {
+            color: #fca5a5;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: opacity 0.2s;
+        }
+
+        /* Main Chat Area */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: radial-gradient(circle at center, #1e1b4b, #0f172a);
+            position: relative;
+        }
+
+        .chat-header {
+            padding: 20px 40px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+            background: rgba(15, 23, 42, 0.8);
+            z-index: 10;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            scroll-behavior: smooth;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 16px 20px;
+            border-radius: 20px;
+            font-size: 1rem;
+            line-height: 1.5;
+            position: relative;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background: var(--user-bubble);
+            border-bottom-right-radius: 4px;
+            box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3);
+        }
+
+        .message.ai {
+            align-self: flex-start;
+            background: var(--ai-bubble);
+            border: 1px solid var(--border);
+            border-bottom-left-radius: 4px;
+        }
+
+        /* Input Bar */
+        .input-container {
+            padding: 30px 40px;
+            background: transparent;
+        }
+
+        .input-wrapper {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            display: flex;
+            align-items: center;
+            padding: 8px 10px 8px 25px;
+            gap: 15px;
+            transition: all 0.3s;
+        }
+
+        .input-wrapper:focus-within {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+        }
+
+        input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: white;
+            outline: none;
+            font-size: 1rem;
+            padding: 10px 0;
+        }
+
+        .action-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            font-size: 1.1rem;
+        }
+
+        .voice-btn {
+            background: transparent;
+            color: #94a3b8;
+        }
+
+        .voice-btn.recording {
+            color: #ef4444;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .send-btn {
+            background: var(--primary);
+            color: white;
+        }
+
+        .send-btn:hover {
+            transform: scale(1.05);
+            background: #4f46e5;
+        }
+
+        /* Utils */
+        .typing {
+            font-style: italic;
+            color: #94a3b8;
+            font-size: 0.8rem;
+            margin-top: -10px;
+            display: none;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sidebar">
+        <h1>Gemini Pro</h1>
+        
+        <div class="sidebar-section">
+            <label style="color: #94a3b8; font-size: 0.8rem; margin-bottom: 8px; display: block;">Select Model</label>
+            <select id="modelSelector" style="width: 100%; background: var(--glass); border: 1px solid var(--border); color: white; padding: 10px; border-radius: 8px; outline: none; cursor: pointer;">
+                <option value="gemini-1.5-flash">Gemini 1.5 Flash (Fast)</option>
+                <option value="gemini-1.5-pro">Gemini 1.5 Pro (Powerful)</option>
+                <option value="gemini-2.0-flash">Gemini 2.0 Flash (Experimental)</option>
+            </select>
+        </div>
+
+        <div class="sidebar-section" style="margin-top: 20px;">
+            <label style="color: #94a3b8; font-size: 0.8rem; margin-bottom: 12px; display: block;">Short Interactions</label>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button class="quick-btn" onclick="quickMessage('Is this possible?')">Is this possible?</button>
+                <button class="quick-btn" onclick="quickMessage('Yes, go ahead.')">Yes</button>
+                <button class="quick-btn" onclick="quickMessage('No, let\'s rethink.')">No</button>
+                <button class="quick-btn" onclick="quickMessage('Can you explain step by step?')">Step-by-step detail</button>
+            </div>
+        </div>
+
+        <style>
+            .sidebar-section { margin-bottom: 20px; }
+            .quick-btn {
+                background: var(--glass);
+                border: 1px solid var(--border);
+                color: #e2e8f0;
+                padding: 8px 12px;
+                border-radius: 8px;
+                cursor: pointer;
+                text-align: left;
+                font-size: 0.9rem;
+                transition: all 0.2s;
+            }
+            .quick-btn:hover {
+                background: rgba(255, 255, 255, 0.1);
+                border-color: var(--primary);
+            }
+        </style>
+
+        <div class="user-info" style="margin-top: auto;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-circle-user" style="font-size: 1.5rem; color: var(--primary);"></i>
+                <span>{{ username }}</span>
+            </div>
+            <a href="/logout" class="logout-btn">
+                <i class="fa-solid fa-right-from-bracket"></i>
+            </a>
+        </div>
+    </div>
+
+    <div class="chat-area">
+        <div class="chat-header">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 10px; height: 10px; background: #22c55e; border-radius: 50%;"></div>
+                <span id="activeModelDisplay" style="font-weight: 600;">Gemini 1.5 Flash</span>
+            </div>
+            <button onclick="clearChat()"
+                style="background: transparent; border: none; color: #94a3b8; cursor: pointer;">
+                <i class="fa-solid fa-trash-can"></i>
+            </button>
+        </div>
+
+        <div class="chat-messages" id="chatContainer">
+            <!-- Messages load here -->
+        </div>
+
+        <div class="input-container">
+            <div class="typing" id="typingIndicator">Gemini is thinking...</div>
+            <div class="input-wrapper">
+                <input type="text" id="userInput" placeholder="Ask anything..." autocomplete="off">
+                <button class="action-btn voice-btn" id="voiceBtn" title="Voice Input">
+                    <i class="fa-solid fa-microphone"></i>
+                </button>
+                <button class="action-btn send-btn" id="sendBtn">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const chatContainer = document.getElementById('chatContainer');
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const voiceBtn = document.getElementById('voiceBtn');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const modelSelector = document.getElementById('modelSelector');
+        const activeModelDisplay = document.getElementById('activeModelDisplay');
+        let sessionId = 'default';
+
+        modelSelector.addEventListener('change', () => {
+            activeModelDisplay.textContent = modelSelector.options[modelSelector.selectedIndex].text;
+        });
+
+        function quickMessage(text) {
+            userInput.value = text;
+            sendMessage();
+        }
+
+        // Load History on Start
+        async function loadHistory() {
+            try {
+                const res = await fetch(`/api/history?session_id=${sessionId}`);
+                const history = await res.json();
+                history.forEach(msg => {
+                    appendMessage(msg.content, msg.role);
+                });
+            } catch (e) { console.error("History load error", e); }
+        }
+
+        function appendMessage(text, role) {
+            const div = document.createElement('div');
+            div.className = `message ${role}`;
+            // Simple markdown-to-html conversion for points
+            const formattedText = text.replace(/\n\* /g, '<br>• ').replace(/\n\d\. /g, '<br>1. ');
+            div.innerHTML = text.replace(/\n/g, '<br>'); 
+            chatContainer.appendChild(div);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            const model = modelSelector.value;
+            if (!message) return;
+
+            appendMessage(message, 'user');
+            userInput.value = '';
+            typingIndicator.style.display = 'block';
+
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        message, 
+                        session_id: sessionId,
+                        model: model
+                    })
+                });
+                const data = await res.json();
+                typingIndicator.style.display = 'none';
+
+                if (data.response) {
+                    appendMessage(data.response, 'ai');
+                } else {
+                    appendMessage("Error: " + data.error, 'ai');
+                }
+            } catch (e) {
+                typingIndicator.style.display = 'none';
+                appendMessage("Failed to connect to AI.", 'ai');
+            }
+        }
+
+        // Voice Control Implementation
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition) {
+            const recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.lang = 'en-US';
+
+            voiceBtn.addEventListener('click', () => {
+                recognition.start();
+                voiceBtn.classList.add('recording');
+            });
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                userInput.value = transcript;
+                sendMessage();
+                voiceBtn.classList.remove('recording');
+            };
+
+            recognition.onerror = () => {
+                voiceBtn.classList.remove('recording');
+            };
+
+            recognition.onend = () => {
+                voiceBtn.classList.remove('recording');
+            };
+        } else {
+            voiceBtn.style.display = 'none';
+            console.log("Speech recognition not supported");
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        function clearChat() {
+            if (confirm("Delete this conversation?")) {
+                chatContainer.innerHTML = '';
+                // Add API call for clear if needed
+            }
+        }
+
+        loadHistory();
+    </script>
+</body>
+
+</html>
